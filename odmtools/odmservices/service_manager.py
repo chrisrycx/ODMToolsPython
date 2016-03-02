@@ -192,11 +192,12 @@ class ServiceManager():
             driver = "pyodbc"
             quoted = urllib.quote_plus('DRIVER={FreeTDS};DSN=%s;UID=%s;PWD=%s;' % (conn_dict['address'], conn_dict['user'], conn_dict['password']))
             conn_string = 'mssql+pyodbc:///?odbc_connect={}'.format(quoted)
-        
+        elif conn_dict['engine'] == 'mssql':
+            #For SQLAlchemy V1.0, driver must be specified when using pyodbc
+            conn_string = 'mssql+pyodbc://{}:{}@{}/{}?driver=SQL+Server'.format(conn_dict['user'],conn_dict['password'],conn_dict['address'],conn_dict['db'])
+            logger.debug("Conn_string: %s" % conn_string)
         else:
-            if conn_dict['engine'] == 'mssql':
-                driver = "pyodbc"
-            elif conn_dict['engine'] == 'mysql':
+            if conn_dict['engine'] == 'mysql':
                 driver = "pymysql"
             elif conn_dict['engine'] == 'postgresql':
                 driver = "psycopg2"
@@ -204,8 +205,8 @@ class ServiceManager():
                 driver = "None"
 
             conn_string = self._connection_format % (
-                conn_dict['engine'], driver, conn_dict['user'], conn_dict['password'], conn_dict['address'],
-                conn_dict['db'])
+                conn_dict['engine'], driver, conn_dict['user'], 
+                conn_dict['password'], conn_dict['address'], conn_dict['db'])
         return conn_string
 
     def _save_connections(self):
