@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+ #!/usr/local/bin/python
 
 """
 
@@ -43,6 +43,8 @@ class MyApp(wx.App):
     def OnInit(self):
         """
         Initialize an App with a Frame
+        CC - OnInit seems to be specific to wxpython and is called when the 
+        base class of wx.App is called. It seems to be necessary.
         """
         title = u'ODMTools'
 
@@ -57,7 +59,7 @@ class MyApp(wx.App):
         kwargs['memdb']= self.memdb
         self.frame = frmODMToolsMain(**kwargs)
         self.frame.Show(True)
-        app= self.frame
+        app = self.frame
         return True
 
 def runODM():

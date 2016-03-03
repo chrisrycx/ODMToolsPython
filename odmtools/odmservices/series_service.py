@@ -1,3 +1,8 @@
+'''
+
+CC - this seems to be the script that gets all the data from the database.
+''' 
+
 import logging
 
 

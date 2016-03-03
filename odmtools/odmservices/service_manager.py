@@ -1,3 +1,11 @@
+'''
+CC - This module creates the connection to the database and tests to see if it works. 
+It loads a file that seems to be a saved connection or it creates a new connection. Way down
+at the bottom is a method that builds a connection string to the various database
+types. While the connect string is created in this module, it doesn't actually connect anywhere
+other than the test connection. 
+'''
+
 import logging
 import os
 import sys
@@ -23,10 +31,10 @@ logger = tool.setupLogger(__name__, __name__ + '.log', 'w', logging.DEBUG)
 class ServiceManager():
     def __init__(self, debug=False):
         self.debug = debug
-        f = self._get_file('r')
+        f = self._get_file('r')   #Definition below: I think this loads the previous database config: CC
         self._conn_dicts = []
         self.version = 0
-        self._connection_format = "%s+%s://%s:%s@%s/%s"
+        self._connection_format = "%s+%s://%s:%s@%s/%s"   #CC- This is SQLAlchemy connection string... see p199 of intro to python
 
         # Read all lines (connections) in the connection.cfg file
         while True:
@@ -93,9 +101,10 @@ class ServiceManager():
             return False
 
 
-    @classmethod
+    #CC - I think this is used to test the connection
+    @classmethod  #This is a class method decorator (p134 intro to python). This looks weird though, it should be given parameter cls - CC 
     def testEngine(self, connection_string):
-        s = SessionFactory(connection_string, echo=False)
+        s = SessionFactory(connection_string, echo=False)  #See session_factory.py
         if 'mssql' in connection_string:
             s.ms_test_Session().execute("Select top 1 VariableCode From Variables")
         elif 'mysql' in connection_string:
@@ -103,6 +112,8 @@ class ServiceManager():
         elif 'postgresql' in connection_string:
             #s.psql_test_Session().execute('Select "VariableCode" From "ODM2"."Variables" Limit 1')
             s.psql_test_Session().execute('Select "VariableCode" From "Variables" Limit 1')
+        elif 'sqlite' in connection_string:
+            s.sqlite_test_Session().execute('SELECT VariableCode FROM Variables LIMIT 1')
         return True
 
     def test_connection(self, conn_dict):
@@ -187,25 +198,39 @@ class ServiceManager():
         return config_file
 
     def _build_connection_string(self, conn_dict):
+        """This method creates the connection string for SQLAlchemy - CC"""
         driver = ""
+        #The first option here is specific to Linux - FreeTDS is a linux driver - CC
         if conn_dict['engine'] == 'mssql' and sys.platform != 'win32':
             driver = "pyodbc"
             quoted = urllib.quote_plus('DRIVER={FreeTDS};DSN=%s;UID=%s;PWD=%s;' % (conn_dict['address'], conn_dict['user'], conn_dict['password']))
             conn_string = 'mssql+pyodbc:///?odbc_connect={}'.format(quoted)
         
+        #Made a few changes here (CC) as the driver seems to need specification
+        # for pyodbc (see SQLAlchemy docs on pyodbc). I don't know why it
+        # works on campus        
+        elif conn_dict['engine'] == 'mssql':
+            driver = "pyodbc"
+            conn_string = '{}+{}://{}:{}@{}/{}?driver=SQL+Server'.format(
+                conn_dict['engine'],driver, conn_dict['user'], 
+                conn_dict['password'], conn_dict['address'],conn_dict['db'])
+                
+        elif conn_dict['engine'] == 'sqlite':  #CC - attempting to add functionality for sqlite
+            conn_string = 'sqlite:///{}'.format(conn_dict['db'])
         else:
-            if conn_dict['engine'] == 'mssql':
-                driver = "pyodbc"
-            elif conn_dict['engine'] == 'mysql':
+            if conn_dict['engine'] == 'mysql':
                 driver = "pymysql"
             elif conn_dict['engine'] == 'postgresql':
                 driver = "psycopg2"
             else:
                 driver = "None"
 
+            #Create connection string from conn_dict and format string 
+            #(see top of module) and return string            
             conn_string = self._connection_format % (
                 conn_dict['engine'], driver, conn_dict['user'], conn_dict['password'], conn_dict['address'],
                 conn_dict['db'])
+        
         return conn_string
 
     def _save_connections(self):

@@ -33,7 +33,7 @@ logger = tool.setupLogger(__name__, __name__ + '.log', 'w', logging.DEBUG)
 
 class frmODMToolsMain(wx.Frame):
     """
-
+    CC - This is the first class that is called from ODMTools.py
     """
 
     def __init__(self, **kwargs):
@@ -53,7 +53,7 @@ class frmODMToolsMain(wx.Frame):
         self.service_manager = ServiceManager()
         self.record_service = None
 
-        series_service = self._init_database()
+        series_service = self._init_database()  #CC - see below
         if series_service:
             self._init_ctrls(series_service)
             self._init_aui_manager()
@@ -140,6 +140,7 @@ class frmODMToolsMain(wx.Frame):
             elif not quit_if_cancel:
                 return series_service
 
+            #CC - This seems to establish the new connection... will add field to 'getFieldValues()
             newConnection = db_config.panel.getFieldValues()
             self.service_manager.set_current_conn_dict(newConnection)
             db_config.Destroy()
